@@ -234,11 +234,19 @@ function loadCSV() {
     header: true,
     skipEmptyLines: true,
     complete: function(results) {
+      const fields = results.meta.fields || [];
+      console.log('Campos encontrados:', fields);
+      const findField = (keys) => fields.find(f => keys.some(k => f.toLowerCase().includes(k.toLowerCase()))) || '';
+      const fNombre = findField(['nombre']);
+      const fRef    = findField(['referencia']);
+      const fImg    = findField(['imagen','256']);
+      const fCat    = findField(['categor']);
+      console.log('Campos usados:', fNombre, fRef, fImg, fCat);
       allProducts = results.data.map(row => ({
-        nombre:   (row['Nombre'] || '').trim(),
-        ref:      (row['Referencia interna'] || '').trim(),
-        img:      (row['Imagen 256'] || '').trim(),
-        categoria:(row['Categoría del Producto'] || '').trim()
+        nombre:   (row[fNombre] || '').trim(),
+        ref:      (row[fRef]    || '').trim(),
+        img:      (row[fImg]    || '').trim(),
+        categoria:(row[fCat]    || '').trim()
       })).filter(p => p.nombre);
 
       document.getElementById('statNum').textContent = allProducts.length;

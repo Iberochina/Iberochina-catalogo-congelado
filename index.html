@@ -30,7 +30,8 @@ body{font-family:'DM Sans',sans-serif;color:var(--text);display:flex;flex-direct
 /* MAIN APP */
 #app{display:none;flex-direction:column;flex:1}
 
-header{background:var(--black);height:70px;display:flex;align-items:stretch;position:sticky;top:0;z-index:300}
+header{background:var(--black);height:70px;display:flex;align-items:stretch}
+.sticky-top{position:sticky;top:0;z-index:300}
 .header-brand{display:flex;align-items:center;gap:16px;padding:0 36px;border-right:1px solid rgba(255,255,255,0.06);min-width:260px}
 .logo-icon{width:36px;height:36px;border:1.5px solid var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--red)}
 .logo-text{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--white);letter-spacing:0.12em}
@@ -149,12 +150,13 @@ footer{background:var(--black);padding:14px 36px;display:flex;align-items:center
 <!-- ERROR -->
 <div id="error">
   <h2>Error al cargar</h2>
-  <p>No se encontró el archivo <strong>productos_congelado.csv</strong>.<br>Asegúrate de que el archivo está en la misma carpeta que este HTML.</p>
-  <code>productos_congelado.csv</code>
+  <p>No se encontró el archivo <strong>productos.csv</strong>.<br>Asegúrate de que el archivo está en la misma carpeta que este HTML.</p>
+  <code>productos.csv</code>
 </div>
 
 <!-- APP -->
 <div id="app">
+<div class="sticky-top">
 <header>
   <div class="header-brand">
     <div class="logo-icon">IC</div>
@@ -185,7 +187,9 @@ footer{background:var(--black);padding:14px 36px;display:flex;align-items:center
 <div class="ticker">
   <div class="ticker-track">
     <div class="ticker-item">CONGELADOS</div><div class="ticker-item">AJINOMOTO</div><div class="ticker-item">CHIMEI</div><div class="ticker-item">MOCHI QUEEN</div><div class="ticker-item">SPRING HOME</div><div class="ticker-item">SK</div><div class="ticker-item">MENGFU</div><div class="ticker-item">COCK</div><div class="ticker-item">MARINHAVE</div><div class="ticker-item">LITTLE CHEF</div><div class="ticker-item">EXOSTAR</div><div class="ticker-item">YAMASUKI</div>
-    <div class="ticker-item">CONGELADOS</div><div class="ticker-item">AJINOMOTO</div><div class="ticker-item">CHIMEI</div><div class="ticker-item">MOCHI QUEEN</div><div class="ticker-item">SPRING HOME</div><div class="ticker-item">SK</div><div class="ticker-item">MENGFU</div><div class="ticker-item">COCK</div><div class="ticker-item">MARINHAVE</div><div class="ticker-item">LITTLE CHEF</div><div class="ticker-item">EXOSTAR</div><div class="ticker-item">YAMASUKI</div>  </div>
+    <div class="ticker-item">CONGELADOS</div><div class="ticker-item">AJINOMOTO</div><div class="ticker-item">CHIMEI</div><div class="ticker-item">MOCHI QUEEN</div><div class="ticker-item">SPRING HOME</div><div class="ticker-item">SK</div><div class="ticker-item">MENGFU</div><div class="ticker-item">COCK</div><div class="ticker-item">MARINHAVE</div><div class="ticker-item">LITTLE CHEF</div><div class="ticker-item">EXOSTAR</div><div class="ticker-item">YAMASUKI</div>
+  </div>
+</div>
 </div>
 
 <div class="layout">
@@ -226,7 +230,7 @@ let curView = 'table';
 
 // ── CARGAR CSV ──────────────────────────────────────────────
 function loadCSV() {
-  const csvUrl = window.location.href.replace(/\/[^\/]*$/, '/') + 'productos_congelado.csv';
+  const csvUrl = window.location.href.replace(/\/[^\/]*$/, '/') + 'productos.csv';
   console.log('Cargando CSV desde:', csvUrl);
   Papa.parse(csvUrl, {
     download: true,

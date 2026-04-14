@@ -21,6 +21,66 @@ body{font-family:'DM Sans',sans-serif;color:var(--text);display:flex;flex-direct
 #loading .msg{font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.3)}
 @keyframes load{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
 
+/* ============== 图片放大弹窗 ============== */
+#imageModal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.zoom-in {
+  cursor: zoom-in;
+}
+
+.zoom-out {
+  cursor: zoom-out;
+}
+
+#imageModal.show {
+  display: flex;
+}
+
+#modalImage {
+  max-width: 92%;
+  max-height: 92vh;
+  border-radius: 6px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  transition: transform 0.3s ease;
+}
+
+#modalClose {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  font-size: 36px;
+  color: #fff;
+  cursor: pointer;
+  z-index: 1001;
+  line-height: 1;
+  opacity: 0.8;
+}
+
+#modalClose:hover {
+  opacity: 1;
+}
+
+#modalInfo {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ddd;
+  font-size: 14px;
+  background: rgba(0,0,0,0.5);
+  padding: 8px 20px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
 /* ERROR */
 #error{display:none;position:fixed;inset:0;background:var(--black);align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
 #error h2{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--red);letter-spacing:0.1em}
@@ -31,7 +91,50 @@ body{font-family:'DM Sans',sans-serif;color:var(--text);display:flex;flex-direct
 #app{display:none;flex-direction:column;flex:1}
 
 header{background:var(--black);height:70px;display:flex;align-items:stretch}
-.sticky-top{position:sticky;top:0;z-index:300}
+
+/* ============== Header + Ticker + Sidebar 吸顶效果 ============== */
+
+/* 整个顶部容器 */
+.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 300;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 只隐藏 Header（70px），Ticker 保持不动 */
+.header-hidden {
+  transform: translateY(-70px) !important;
+}
+
+/* Ticker 永远固定在顶部 */
+.ticker {
+  background: var(--red);
+  height: 34px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 290;
+}
+
+/* 左侧分类栏 - 紧贴 Ticker 下方 */
+aside {
+  position: sticky;
+  top: 34px;                    /* 关键修改：紧贴 Ticker */
+  height: calc(100vh - 34px);
+  z-index: 200;
+  background: var(--near-black);
+  overflow-y: auto;
+}
+
+/* 确保 sidebar-header 不受影响 */
+.sidebar-header {
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
 .header-brand{display:flex;align-items:center;gap:16px;padding:0 36px;border-right:1px solid rgba(255,255,255,0.06);min-width:260px}
 .logo-icon{width:36px;height:36px;border:1.5px solid var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--red)}
 .logo-text{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--white);letter-spacing:0.12em}
@@ -50,9 +153,39 @@ header{background:var(--black);height:70px;display:flex;align-items:stretch}
 .stat-num{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--white);line-height:1;letter-spacing:0.05em}
 .stat-label{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.25)}
 
-.ticker{background:var(--red);height:34px;overflow:hidden;display:flex;align-items:center}
-.ticker-track{display:flex;animation:ticker 40s linear infinite;width:max-content}
-.ticker-item{display:flex;align-items:center;padding:0 28px;font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:0.15em;color:rgba(255,255,255,0.9);border-right:1px solid rgba(255,255,255,0.2);white-space:nowrap}
+.ticker {
+  background: var(--red);
+  height: 34px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.ticker-track {
+  display: flex;
+  animation: ticker 50s linear infinite;   /* 速度：数字越大越慢，推荐 30~45 */
+  width: max-content;
+  will-change: transform;
+}
+
+.ticker-item {
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 12.5px;
+  letter-spacing: 0.15em;
+  color: rgba(255,255,255,0.92);
+  border-right: 1px solid rgba(255,255,255,0.25);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
 @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
 .layout{display:flex;flex:1;min-height:0}
@@ -137,6 +270,12 @@ footer{background:var(--black);padding:14px 36px;display:flex;align-items:center
 
 @media(max-width:900px){aside{display:none}.header-stats{display:none}.header-brand{min-width:auto}.main-top{padding:16px}.grid-view{padding:14px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
 </style>
+<!-- 图片放大弹窗 -->
+<div id="imageModal">
+  <span id="modalClose">&times;</span>
+  <img id="modalImage" src="" alt="">
+  <div id="modalInfo"></div>
+</div>
 </head>
 <body>
 
@@ -185,10 +324,7 @@ footer{background:var(--black);padding:14px 36px;display:flex;align-items:center
 </header>
 
 <div class="ticker">
-  <div class="ticker-track">
-    <div class="ticker-item">CONGELADOS</div><div class="ticker-item">AJINOMOTO</div><div class="ticker-item">CHIMEI</div><div class="ticker-item">MOCHI QUEEN</div><div class="ticker-item">SPRING HOME</div><div class="ticker-item">SK</div><div class="ticker-item">MENGFU</div><div class="ticker-item">COCK</div><div class="ticker-item">MARINHAVE</div><div class="ticker-item">LITTLE CHEF</div><div class="ticker-item">EXOSTAR</div><div class="ticker-item">YAMASUKI</div>
-    <div class="ticker-item">CONGELADOS</div><div class="ticker-item">AJINOMOTO</div><div class="ticker-item">CHIMEI</div><div class="ticker-item">MOCHI QUEEN</div><div class="ticker-item">SPRING HOME</div><div class="ticker-item">SK</div><div class="ticker-item">MENGFU</div><div class="ticker-item">COCK</div><div class="ticker-item">MARINHAVE</div><div class="ticker-item">LITTLE CHEF</div><div class="ticker-item">EXOSTAR</div><div class="ticker-item">YAMASUKI</div>
-  </div>
+  <div class="ticker-track" id="tickerTrack"></div>
 </div>
 </div>
 
@@ -259,6 +395,8 @@ function loadCSV() {
 
       buildSidebar();
       renderProducts(allProducts);
+      setupImageModal();
+      initHeaderScroll();
 
       document.getElementById('loading').style.display = 'none';
       const app = document.getElementById('app');
@@ -269,6 +407,111 @@ function loadCSV() {
       const err = document.getElementById('error');
       err.style.display = 'flex';
     }
+  });
+}
+
+// ==================== 图片点击放大功能 ====================
+function setupImageModal() {
+  const modal = document.getElementById('imageModal');
+  const modalImg = document.getElementById('modalImage');
+  const modalInfo = document.getElementById('modalInfo');
+  const closeBtn = document.getElementById('modalClose');
+  let scale = 1;
+  updateZoom();
+
+  
+  function updateZoom() {
+  modalImg.style.transform = `scale(${scale})`;
+
+  modal.classList.remove('zoom-in', 'zoom-out');
+
+  if (scale > 1) {
+    modal.classList.add('zoom-in'); // 显示 -
+  } else {
+    modal.classList.add('zoom-out'); // 显示 +
+  }
+}
+
+
+modalImg.addEventListener('mouseleave', function () {
+  modal.classList.remove('zoom-in');
+  modal.classList.add('zoom-out'); // 鼠标离开 → -
+});
+
+
+modalImg.addEventListener('mouseenter', function () {
+  modal.classList.remove('zoom-out');
+  modal.classList.add('zoom-in'); // 鼠标在图 → +
+});
+
+
+  modalImg.addEventListener('click', function(e) {
+  e.stopPropagation(); // 防止冒泡到 modal
+
+  if (scale === 1) {
+    scale = 2; // 放大
+  } else {
+    scale = 1; // 缩小
+  }
+  updateZoom();
+});
+
+
+  // 点击关闭
+  function closeModal() {
+    modal.classList.remove('show');
+    setTimeout(() => {
+      modalImg.src = '';
+    }, 300);
+  }
+
+  closeBtn.addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e) {
+  if (e.target === modal) {
+    if (scale > 1) {
+      // 如果已经放大 → 只缩小
+      scale = 1;
+      updateZoom();
+    } else {
+      // 正常状态 → 才关闭
+      closeModal();
+    }
+  }
+});
+
+  // ESC 键关闭
+  document.addEventListener('keydown', function(e) {
+    if (e.key === "Escape" && modal.classList.contains('show')) {
+      closeModal();
+    }
+  });
+
+  // 给所有图片添加点击事件（使用事件委托，更高效）
+  document.addEventListener('click', function(e) {
+    const img = e.target.closest('img.td-img, img.card-img');
+    if (!img || !img.src) return;
+
+    // 获取产品信息（尝试从同一行或卡片中找）
+    let productName = '';
+    let ref = '';
+
+    const row = img.closest('tr');
+    if (row) {
+      const nameTd = row.querySelector('.td-nombre');
+      const refTd = row.querySelector('.td-code');
+      if (nameTd) productName = nameTd.textContent.trim();
+      if (refTd) ref = refTd.textContent.trim();
+    } else {
+      const card = img.closest('.card');
+      if (card) {
+        productName = card.querySelector('.card-nombre')?.textContent.trim() || '';
+        ref = card.querySelector('.card-code')?.textContent.trim() || '';
+      }
+    }
+
+    modalImg.src = img.src;
+    modalInfo.textContent = ref ? `${ref} — ${productName}` : productName;
+    modal.classList.add('show');
   });
 }
 
@@ -446,6 +689,61 @@ function renderProducts(data) {
         <td class="td-cat">${catHtml(p.categoria)}</td>
       </tr>`).join('');
   }
+}
+
+// ==================== 自动生成 Ticker（无限循环版） ====================
+function initTicker() {
+  const brands = [
+    "CONGELADOS", "AJINOMOTO", "CHIMEI", "MOCHI QUEEN", 
+    "SPRING HOME", "SK", "MENGFU", "COCK", "MARINHAVE", 
+    "LITTLE CHEF", "EXOSTAR", "YAMASUKI"
+  ];
+
+  const track = document.getElementById('tickerTrack');
+  if (!track) return;
+
+  let html = '';
+  const repeatTimes = 8;   // ← 这里改数字！想更密集就改大（推荐 6~10）
+
+  for (let i = 0; i < repeatTimes; i++) {
+    brands.forEach(brand => {
+      html += `<div class="ticker-item">${brand}</div>`;
+    });
+  }
+
+  track.innerHTML = html;
+}
+
+// 在页面加载完成后调用
+window.addEventListener('load', initTicker);
+
+// ==================== 只隐藏 Header，Ticker 和 Sidebar 紧贴 Ticker ====================
+function initHeaderScroll() {
+  const stickyTop = document.querySelector('.sticky-top');
+  if (!stickyTop) return;
+
+  let lastScrollY = window.scrollY;
+  let ticking = false;
+
+  function updateHeader() {
+    const currentScrollY = window.scrollY;
+
+    if (currentScrollY > lastScrollY && currentScrollY > 60) {
+      stickyTop.classList.add('header-hidden');
+    } else {
+      stickyTop.classList.remove('header-hidden');
+    }
+
+    lastScrollY = currentScrollY;
+    ticking = false;
+  }
+
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(updateHeader);
+      ticking = true;
+    }
+  });
 }
 
 // ── INIT ─────────────────────────────────────────────────────

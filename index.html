@@ -1,545 +1,1227 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IBEROCHINA — Congelados</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--red:#1a5fa8;--black:#060c14;--near-black:#0d1621;--white:#f4f7fb;--cream:#e8eef6;--warm:#d4dde8;--gold:#4a9fd4;--text:#1a1a2e;--muted:#7a8fa6;--subtle:#a0b4c8;--border:#d4dde8}
-html,body{height:100%;background:var(--cream)}
-body{font-family:'DM Sans',sans-serif;color:var(--text);display:flex;flex-direction:column}
-
-/* LOADING */
-#loading{position:fixed;inset:0;background:#060c14;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:20px}
-#loading .logo{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--white);letter-spacing:0.15em}
-#loading .logo em{color:var(--red);font-style:normal}
-#loading .bar-wrap{width:240px;height:2px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden}
-#loading .bar{height:100%;background:var(--red);border-radius:2px;animation:load 1.5s ease-in-out infinite}
-#loading .msg{font-size:12px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.3)}
-@keyframes load{0%{width:0;margin-left:0}50%{width:100%;margin-left:0}100%{width:0;margin-left:100%}}
-
-/* ============== 图片放大弹窗 ============== */
-#imageModal {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.92);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-}
-
-.zoom-in {
-  cursor: zoom-in;
-}
-
-.zoom-out {
-  cursor: zoom-out;
-}
-
-#imageModal.show {
-  display: flex;
-}
-
-#modalImage {
-  max-width: 92%;
-  max-height: 92vh;
-  border-radius: 6px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  transition: transform 0.3s ease;
-}
-
-#modalClose {
-  position: absolute;
-  top: 20px;
-  right: 30px;
-  font-size: 36px;
-  color: #fff;
-  cursor: pointer;
-  z-index: 1001;
-  line-height: 1;
-  opacity: 0.8;
-}
-
-#modalClose:hover {
-  opacity: 1;
-}
-
-#modalInfo {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #ddd;
-  font-size: 14px;
-  background: rgba(0,0,0,0.5);
-  padding: 8px 20px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-
-/* ERROR */
-#error{display:none;position:fixed;inset:0;background:var(--black);align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:16px}
-#error h2{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--red);letter-spacing:0.1em}
-#error p{font-size:14px;color:rgba(255,255,255,0.5);font-weight:300;text-align:center;max-width:400px;line-height:1.6}
-#error code{font-size:11px;color:var(--gold);background:rgba(255,255,255,0.05);padding:8px 16px;border-radius:4px;font-family:monospace}
-
-/* MAIN APP */
-#app{display:none;flex-direction:column;flex:1}
-
-header{background:var(--black);height:70px;display:flex;align-items:stretch}
-
-/* ============== Header + Ticker + Sidebar 吸顶效果 ============== */
-
-/* 整个顶部容器 */
-.sticky-top {
-  position: sticky;
-  top: 0;
-  z-index: 300;
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* 只隐藏 Header（70px），Ticker 保持不动 */
-.header-hidden {
-  transform: translateY(-70px) !important;
-}
-
-/* Ticker 永远固定在顶部 */
-.ticker {
-  background: var(--red);
-  height: 34px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  position: sticky;
-  top: 0;
-  z-index: 290;
-}
-
-/* 左侧分类栏 - 紧贴 Ticker 下方 */
-aside {
-  position: sticky;
-  top: 34px;                    /* 关键修改：紧贴 Ticker */
-  height: calc(100vh - 34px);
-  z-index: 200;
-  background: var(--near-black);
-  overflow-y: auto;
-}
-
-/* 确保 sidebar-header 不受影响 */
-.sidebar-header {
-  padding: 20px 20px 14px;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.header-brand{display:flex;align-items:center;gap:16px;padding:0 36px;border-right:1px solid rgba(255,255,255,0.06);min-width:260px}
-.logo-icon{width:36px;height:36px;border:1.5px solid var(--red);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:var(--red)}
-.logo-text{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--white);letter-spacing:0.12em}
-.logo-sub{font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.25);margin-top:2px}
-.header-center{flex:1;display:flex;align-items:center;padding:0 32px;gap:16px}
-.search-container{flex:1;max-width:480px;display:flex;align-items:center;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:2px;padding:0 16px;gap:10px;transition:border 0.2s}
-.search-container:focus-within{border-color:rgba(26,95,168,0.6);background:rgba(255,255,255,0.1)}
-.search-container svg{opacity:0.3;flex-shrink:0}
-.search-container input{background:none;border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--white);width:100%;padding:11px 0}
-.search-container input::placeholder{color:rgba(255,255,255,0.25)}
-.view-btns{display:flex;gap:4px}
-.view-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.4);padding:7px 10px;cursor:pointer;border-radius:2px;font-size:12px;transition:all 0.2s}
-.view-btn.active{background:var(--red);border-color:var(--red);color:white}
-.header-stats{display:flex;gap:32px;padding:0 32px;border-left:1px solid rgba(255,255,255,0.06)}
-.stat{display:flex;flex-direction:column;justify-content:center;gap:2px}
-.stat-num{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--white);line-height:1;letter-spacing:0.05em}
-.stat-label{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.25)}
-
-.ticker {
-  background: var(--red);
-  height: 34px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-}
-
-.ticker-track {
-  display: flex;
-  animation: ticker 50s linear infinite;   /* 速度：数字越大越慢，推荐 30~45 */
-  width: max-content;
-  will-change: transform;
-}
-
-.ticker-item {
-  display: flex;
-  align-items: center;
-  padding: 0 32px;
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 12.5px;
-  letter-spacing: 0.15em;
-  color: rgba(255,255,255,0.92);
-  border-right: 1px solid rgba(255,255,255,0.25);
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-@keyframes ticker {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-
-@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-
-.layout{display:flex;flex:1;min-height:0}
-
-aside{width:220px;min-width:220px;background:var(--near-black);display:flex;flex-direction:column;position:sticky;top:104px;height:calc(100vh - 104px);overflow:hidden}
-.sidebar-header{padding:20px 20px 14px;border-bottom:1px solid rgba(255,255,255,0.05)}
-.sidebar-heading{font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:rgba(255,255,255,0.2)}
-.sidebar-scroll{flex:1;overflow-y:auto;padding:8px 0 24px}
-.sidebar-scroll::-webkit-scrollbar{width:3px}
-.sidebar-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
-.nav-all{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;cursor:pointer;font-size:13px;color:rgba(255,255,255,0.5);transition:all 0.2s;border-left:2px solid transparent}
-.nav-all:hover{color:var(--white);background:rgba(255,255,255,0.04)}
-.nav-all.active{color:var(--white);border-left-color:var(--red);background:rgba(26,95,168,0.15)}
-.nav-count{font-family:'Bebas Neue',sans-serif;font-size:15px;color:rgba(255,255,255,0.2)}
-.nav-all.active .nav-count{color:var(--red)}
-.nav-divider{height:1px;background:rgba(255,255,255,0.05);margin:6px 20px}
-.nav-group{margin-bottom:2px}
-.nav-parent{display:flex;align-items:center;justify-content:space-between;padding:9px 20px;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;color:rgba(255,255,255,0.3);transition:color 0.2s;user-select:none}
-.nav-parent:hover{color:rgba(255,255,255,0.65)}
-.nav-parent.open{color:rgba(255,255,255,0.8)}
-.nav-arrow{font-size:9px;color:rgba(255,255,255,0.2);transition:transform 0.2s}
-.nav-parent.open .nav-arrow{transform:rotate(90deg);color:rgba(255,255,255,0.4)}
-.nav-children{display:none;padding-bottom:4px}
-.nav-group.open .nav-children{display:block}
-.nav-item{display:flex;align-items:center;justify-content:space-between;padding:8px 20px 8px 30px;cursor:pointer;font-size:13px;font-weight:300;color:rgba(255,255,255,0.4);border-left:2px solid transparent;transition:all 0.15s}
-.nav-item:hover{color:rgba(255,255,255,0.7);background:rgba(255,255,255,0.03)}
-.nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(74,159,212,0.1)}
-.nav-item-count{font-family:'Bebas Neue',sans-serif;font-size:14px;color:rgba(255,255,255,0.15)}
-.nav-item.active .nav-item-count{color:rgba(74,159,212,0.6)}
-
-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
-.main-top{background:var(--white);padding:24px 36px 20px;border-bottom:1px solid var(--warm)}
-.breadcrumb{font-size:11px;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px}
-.page-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;line-height:1;color:var(--black)}
-.page-title strong{font-weight:600;color:var(--red)}
-.page-count{font-size:12px;color:var(--muted);font-weight:300;margin-top:8px}
-.page-count strong{color:var(--text);font-weight:500}
-
-.content-area{flex:1;overflow:auto}
-.content-area::-webkit-scrollbar{width:6px;height:6px}
-.content-area::-webkit-scrollbar-thumb{background:var(--warm);border-radius:3px}
-
-table{width:100%;border-collapse:collapse}
-thead{position:sticky;top:0;z-index:10}
-thead tr{background:var(--black)}
-th{padding:12px 16px;font-size:9px;font-weight:500;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.4);text-align:left;white-space:nowrap}
-th:first-child{padding-left:36px;width:72px}
-th:last-child{padding-right:36px}
-tbody tr{border-bottom:1px solid var(--border);background:var(--white);transition:background 0.1s}
-tbody tr:nth-child(even){background:#fdf9f4}
-tbody tr:hover{background:#eef4ff}
-td{padding:10px 16px;vertical-align:middle}
-td:first-child{padding-left:36px}
-td:last-child{padding-right:36px}
-.td-img{width:56px;height:56px;object-fit:contain;border-radius:4px;background:var(--cream)}
-.td-no-img{width:56px;height:56px;background:var(--cream);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--warm)}
-.td-code{font-size:13px;color:var(--subtle);letter-spacing:0.05em;font-family:monospace;white-space:nowrap}
-.td-nombre{font-size:15px;font-weight:300;line-height:1.5;color:var(--text)}
-.td-cat{font-size:13px;color:var(--muted);max-width:200px;line-height:1.4}
-.cat-parent-txt{color:var(--subtle);font-size:12px;letter-spacing:0.05em;display:block}
-.cat-child-txt{color:var(--text);font-size:13.5px;display:block}
-
-.grid-view{display:none;padding:20px 28px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
-.grid-view.show{display:grid}
-.card{background:var(--white);border:1px solid var(--border);border-radius:4px;overflow:hidden;transition:all 0.2s}
-.card:hover{border-color:var(--red);transform:translateY(-2px);box-shadow:0 6px 20px rgba(26,95,168,0.12)}
-.card-img-wrap{height:140px;display:flex;align-items:center;justify-content:center;background:var(--cream);border-bottom:1px solid var(--border);padding:12px}
-.card-img{max-width:100%;max-height:100%;object-fit:contain}
-.card-no-img{font-size:40px;color:var(--warm)}
-.card-body{padding:12px}
-.card-code{font-family:monospace;font-size:12px;color:var(--subtle);margin-bottom:5px}
-.card-nombre{font-size:13.5px;font-weight:300;line-height:1.45;color:var(--text);margin-bottom:7px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.card-cat{font-size:12px;color:var(--muted)}
-
-.no-results{display:none;flex-direction:column;align-items:center;justify-content:center;padding:80px 40px;text-align:center;background:var(--white)}
-.no-results-num{font-family:'Bebas Neue',sans-serif;font-size:80px;color:var(--warm);line-height:1}
-.no-results-text{font-size:14px;color:var(--muted);font-weight:300;margin-top:8px}
-
-footer{background:var(--black);padding:14px 36px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
-.footer-brand{font-family:'Bebas Neue',sans-serif;font-size:15px;color:rgba(255,255,255,0.2);letter-spacing:0.1em}
-.footer-note{font-size:11px;color:rgba(255,255,255,0.15);font-weight:300}
-
-@media(max-width:900px){aside{display:none}.header-stats{display:none}.header-brand{min-width:auto}.main-top{padding:16px}.grid-view{padding:14px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
-</style>
-<!-- 图片放大弹窗 -->
-<div id="imageModal">
-  <span id="modalClose">&times;</span>
-  <img id="modalImage" src="" alt="">
-  <div id="modalInfo"></div>
-</div>
-</head>
-<body>
-
-<!-- LOADING -->
-<div id="loading">
-  <div class="logo">IBERO<em>CHINA</em></div>
-  <div class="bar-wrap"><div class="bar"></div></div>
-  <div class="msg">Cargando catálogo...</div>
-</div>
-
-<!-- ERROR -->
-<div id="error">
-  <h2>Error al cargar</h2>
-  <p>No se encontró el archivo <strong>productos.csv</strong>.<br>Asegúrate de que el archivo está en la misma carpeta que este HTML.</p>
-  <code>productos.csv</code>
-</div>
-
-<!-- APP -->
-<div id="app">
-<div class="sticky-top">
-<header>
-  <div class="header-brand">
-    <div class="logo-icon">IC</div>
-    <div>
-      <div class="logo-text">IBEROCHINA</div>
-      <div class="logo-sub">Productos Congelados</div>
-    </div>
-  </div>
-  <div class="header-center">
-    <div class="search-container">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" id="search" placeholder="Buscar por nombre o referencia..." oninput="filterProducts()">
-    </div>
-    <div class="view-btns">
-      <button class="view-btn active" onclick="setView('table',this)" title="Tabla">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
-      </button>
-      <button class="view-btn" onclick="setView('grid',this)" title="Cuadrícula">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      </button>
-    </div>
-  </div>
-  <div class="header-stats">
-    <div class="stat"><div class="stat-num" id="statNum">—</div><div class="stat-label">Productos</div></div>
-  </div>
-</header>
-
-<div class="ticker">
-  <div class="ticker-track" id="tickerTrack"></div>
-</div>
-</div>
-
-<div class="layout">
-  <aside>
-    <div class="sidebar-header"><div class="sidebar-heading">Categorías</div></div>
-    <div class="sidebar-scroll" id="sidebarNav"></div>
-  </aside>
-  <main>
-    <div class="main-top">
-      <div class="breadcrumb" id="breadcrumb">Todos los productos</div>
-      <div class="page-title" id="pageTitle">Productos <strong>Congelados</strong></div>
-      <div class="page-count"><strong id="countNum">—</strong> referencias</div>
-    </div>
-    <div class="content-area">
-      <table id="tableView">
-        <thead><tr><th>Foto</th><th>Referencia</th><th>Nombre del Producto</th><th>Categoría</th></tr></thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-      <div class="grid-view" id="gridView"></div>
-      <div class="no-results" id="noResults">
-        <div class="no-results-num">0</div>
-        <div class="no-results-text">Sin resultados para esta búsqueda</div>
-      </div>
-    </div>
-  </main>
-</div>
-
-<footer>
-  <div class="footer-brand">IBEROCHINA · 中欧商场</div>
-  <div class="footer-note" id="footerNote">Expertos en Alimentación Oriental · Desde 1987</div>
-</footer>
-</div>
-
-<script>
-let allProducts = [];
-let curFilter = '';
-let curView = 'table';
-
-// ── CARGAR CSV ──────────────────────────────────────────────
-function loadCSV() {
-  const csvUrl = window.location.href.replace(/\/[^\/]*$/, '/') + 'productos.csv';
-  console.log('Cargando CSV desde:', csvUrl);
-  Papa.parse(csvUrl, {
-    download: true,
-    header: true,
-    skipEmptyLines: true,
-    complete: function(results) {
-      const fields = results.meta.fields || [];
-      console.log('Campos encontrados:', fields);
-      const findField = (keys) => fields.find(f => keys.some(k => f.toLowerCase().includes(k.toLowerCase()))) || '';
-      const fNombre = findField(['nombre']);
-      const fRef    = findField(['referencia']);
-      const fImg    = findField(['imagen','256']);
-      const fCat    = findField(['categor']);
-      console.log('Campos usados:', fNombre, fRef, fImg, fCat);
-      allProducts = results.data.map(row => ({
-        nombre:   (row[fNombre] || '').trim(),
-        ref:      (row[fRef]    || '').trim(),
-        img:      (row[fImg]    || '').trim(),
-        categoria:(row[fCat]    || '').trim()
-      })).filter(p => p.nombre);
-
-      document.getElementById('statNum').textContent = allProducts.length;
-      document.getElementById('countNum').textContent = allProducts.length;
-      document.getElementById('footerNote').textContent =
-        'Expertos en Alimentación Oriental · ' + allProducts.length + ' referencias';
-
-      buildSidebar();
-      renderProducts(allProducts);
-      setupImageModal();
-      initHeaderScroll();
-
-      document.getElementById('loading').style.display = 'none';
-      const app = document.getElementById('app');
-      app.style.display = 'flex';
-    },
-    error: function() {
-      document.getElementById('loading').style.display = 'none';
-      const err = document.getElementById('error');
-      err.style.display = 'flex';
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IBEROCHINA — Congelados</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
     }
-  });
-}
 
-// ==================== 图片点击放大功能 ====================
-function setupImageModal() {
-  const modal = document.getElementById('imageModal');
-  const modalImg = document.getElementById('modalImage');
-  const modalInfo = document.getElementById('modalInfo');
-  const closeBtn = document.getElementById('modalClose');
-  let scale = 1;
-  updateZoom();
-
-  
-  function updateZoom() {
-  modalImg.style.transform = `scale(${scale})`;
-
-  modal.classList.remove('zoom-in', 'zoom-out');
-
-  if (scale > 1) {
-    modal.classList.add('zoom-in'); // 显示 -
-  } else {
-    modal.classList.add('zoom-out'); // 显示 +
-  }
-}
-
-
-modalImg.addEventListener('mouseleave', function () {
-  modal.classList.remove('zoom-in');
-  modal.classList.add('zoom-out'); // 鼠标离开 → -
-});
-
-
-modalImg.addEventListener('mouseenter', function () {
-  modal.classList.remove('zoom-out');
-  modal.classList.add('zoom-in'); // 鼠标在图 → +
-});
-
-
-  modalImg.addEventListener('click', function(e) {
-  e.stopPropagation(); // 防止冒泡到 modal
-
-  if (scale === 1) {
-    scale = 2; // 放大
-  } else {
-    scale = 1; // 缩小
-  }
-  updateZoom();
-});
-
-
-  // 点击关闭
-  function closeModal() {
-    modal.classList.remove('show');
-    setTimeout(() => {
-      modalImg.src = '';
-    }, 300);
-  }
-
-  closeBtn.addEventListener('click', closeModal);
-  modal.addEventListener('click', function(e) {
-  if (e.target === modal) {
-    if (scale > 1) {
-      // 如果已经放大 → 只缩小
-      scale = 1;
-      updateZoom();
-    } else {
-      // 正常状态 → 才关闭
-      closeModal();
+    :root {
+      --red: #1a5fa8;
+      --black: #060c14;
+      --near-black: #0d1621;
+      --white: #f4f7fb;
+      --cream: #e8eef6;
+      --warm: #d4dde8;
+      --gold: #4a9fd4;
+      --text: #1a1a2e;
+      --muted: #7a8fa6;
+      --subtle: #a0b4c8;
+      --border: #d4dde8;
+      --header-h: 70px;
+      --ticker-h: 34px;
     }
-  }
-});
 
-  // ESC 键关闭
-  document.addEventListener('keydown', function(e) {
-    if (e.key === "Escape" && modal.classList.contains('show')) {
-      closeModal();
+    html,
+    body {
+      height: 100%;
+      background: var(--cream)
     }
-  });
 
-  // 给所有图片添加点击事件（使用事件委托，更高效）
-  document.addEventListener('click', function(e) {
-    const img = e.target.closest('img.td-img, img.card-img');
-    if (!img || !img.src) return;
+    body {
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      display: flex;
+      flex-direction: column
+    }
 
-    // 获取产品信息（尝试从同一行或卡片中找）
-    let productName = '';
-    let ref = '';
+    /* LOADING */
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: #060c14;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      gap: 20px
+    }
 
-    const row = img.closest('tr');
-    if (row) {
-      const nameTd = row.querySelector('.td-nombre');
-      const refTd = row.querySelector('.td-code');
-      if (nameTd) productName = nameTd.textContent.trim();
-      if (refTd) ref = refTd.textContent.trim();
-    } else {
-      const card = img.closest('.card');
-      if (card) {
-        productName = card.querySelector('.card-nombre')?.textContent.trim() || '';
-        ref = card.querySelector('.card-code')?.textContent.trim() || '';
+    #loading .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      color: var(--white);
+      letter-spacing: 0.15em
+    }
+
+    #loading .logo em {
+      color: var(--red);
+      font-style: normal
+    }
+
+    #loading .bar-wrap {
+      width: 240px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden
+    }
+
+    #loading .bar {
+      height: 100%;
+      background: var(--red);
+      border-radius: 2px;
+      animation: load 1.5s ease-in-out infinite
+    }
+
+    #loading .msg {
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3)
+    }
+
+    @keyframes load {
+      0% {
+        width: 0;
+        margin-left: 0
+      }
+
+      50% {
+        width: 100%;
+        margin-left: 0
+      }
+
+      100% {
+        width: 0;
+        margin-left: 100%
       }
     }
 
-    modalImg.src = img.src;
-    modalInfo.textContent = ref ? `${ref} — ${productName}` : productName;
-    modal.classList.add('show');
-  });
-}
+    /* ============== Cambio de tamaño de la imagen ============== */
+    #imageModal {
+      display: none; 
+      position: fixed;/*posicion fijo*/ 
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 1000;
+      align-items: center;/*para central*/
+      justify-content: center;
 
-// ── SIDEBAR ─────────────────────────────────────────────────
-function buildSidebar() {
-  const tree = {};
-  allProducts.forEach(p => {
-    if (!p.categoria) return;
-    const parts = p.categoria.split('/').map(s => s.trim());
-    const parent = parts[0];
-    const child  = parts[1] || '';
-    if (!tree[parent]) tree[parent] = {};
-    if (child) tree[parent][child] = (tree[parent][child] || 0) + 1;
-    else tree[parent]['_total'] = (tree[parent]['_total'] || 0) + 1;
-  });
+    }
 
-  const total = allProducts.length;
-  let html = `<div class="nav-all active" onclick="selectAll(this)">
+    .zoom-in {
+      cursor: zoom-in;
+    }
+
+    .zoom-out {
+      cursor: zoom-out;
+    }
+
+    #imageModal.show {  
+      display: flex;/*hacer visible*/
+    }
+
+    #modalImage {
+      max-width: 92%;
+      max-height: 92vh;
+      border-radius: 6px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+      transition: transform 0.3s ease;/*animacion en cuando hacerlo en grande*/
+    }
+
+    #modalClose {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 36px;
+      color: #fff;
+      cursor: pointer;
+      z-index: 1001;
+      line-height: 1;
+      opacity: 0.8;
+    }
+
+    #modalClose:hover {
+      opacity: 1;
+    }
+
+    #modalInfo {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #ddd;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 20px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    /* ERROR */
+    #error {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: var(--black);
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      flex-direction: column;
+      gap: 16px
+    }
+
+    #error h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 32px;
+      color: var(--red);
+      letter-spacing: 0.1em
+    }
+
+    #error p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      font-weight: 300;
+      text-align: center;
+      max-width: 400px;
+      line-height: 1.6
+    }
+
+    #error code {
+      font-size: 11px;
+      color: var(--gold);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-family: monospace
+    }
+
+    /* MAIN APP */
+    #app {
+      display: none;
+      flex-direction: column;
+      flex: 1
+    }
+
+    header {
+      background: var(--black);
+      height: 70px;
+      display: flex;
+      align-items: stretch
+    }
+
+    /* ============== Header + Ticker + Sidebar 吸顶效果 ============== */
+
+    /* 整个顶部容器 */
+    .sticky-top {
+      position: sticky;
+      top: 0;
+      z-index: 300;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 只隐藏 Header（70px），Ticker 保持不动 */
+    .header-hidden {
+      transform: translateY(calc(-1 * var(--header-h)));
+    }
+
+    /* Ticker 永远固定在顶部 */
+    .ticker {
+      background: var(--red);
+      height: var(--ticker-h);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
+    /* 左侧分类栏 - 紧贴 Ticker 下方 */
+    aside {
+      position: sticky;
+      top: var(--ticker-h);
+      /* 改为动态，不再写死 */
+      height: calc(100vh - var(--ticker-h));
+      transition: top 0.35s cubic-bezier(0.4, 0, 0.2, 1), height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      /* JS 会动态覆盖 */
+      z-index: 10;
+      transition: top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* 确保 sidebar-header 不受影响 */
+    .sidebar-header {
+      padding: 20px 20px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 36px;
+      border-right: 1px solid rgba(255, 255, 255, 0.06);
+      min-width: 260px
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      border: 1.5px solid var(--red);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      color: var(--red)
+    }
+
+    .logo-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      color: var(--white);
+      letter-spacing: 0.12em
+    }
+
+    .logo-sub {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.25);
+      margin-top: 2px
+    }
+
+    .header-center {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      gap: 16px
+    }
+
+    .search-container {
+      flex: 1;
+      max-width: 480px;
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      padding: 0 16px;
+      gap: 10px;
+      transition: border 0.2s
+    }
+
+    .search-container:focus-within {
+      border-color: rgba(26, 95, 168, 0.6);
+      background: rgba(255, 255, 255, 0.1)
+    }
+
+    .search-container svg {
+      opacity: 0.3;
+      flex-shrink: 0
+    }
+
+    .search-container input {
+      background: none;
+      border: none;
+      outline: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: var(--white);
+      width: 100%;
+      padding: 11px 0
+    }
+
+    .search-container input::placeholder {
+      color: rgba(255, 255, 255, 0.25)
+    }
+
+    .view-btns {
+      display: flex;
+      gap: 4px
+    }
+
+    .view-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.4);
+      padding: 7px 10px;
+      cursor: pointer;
+      border-radius: 2px;
+      font-size: 12px;
+      transition: all 0.2s
+    }
+
+    .view-btn.active {
+      background: var(--red);
+      border-color: var(--red);
+      color: white
+    }
+
+    .header-stats {
+      display: flex;
+      gap: 32px;
+      padding: 0 32px;
+      border-left: 1px solid rgba(255, 255, 255, 0.06)
+    }
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px
+    }
+
+    .stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      color: var(--white);
+      line-height: 1;
+      letter-spacing: 0.05em
+    }
+
+    .stat-label {
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.25)
+    }
+
+    .ticker {
+      background: var(--red);
+      height: 34px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+
+    .ticker-track {
+      display: flex;
+      animation: ticker 50s linear infinite;
+      width: max-content;
+      will-change: transform
+    }
+
+    .ticker-item {
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 12.5px;
+      letter-spacing: 0.15em;
+      color: rgba(255, 255, 255, 0.92);
+      border-right: 1px solid rgba(255, 255, 255, 0.25);
+      flex-shrink: 0;
+      white-space: nowrap
+    }
+
+    @keyframes ticker {
+      from {
+        transform: translateX(0);
+      }
+
+      to {
+        transform: translateX(-50%);
+      }
+    }
+
+    @keyframes ticker {
+      from {
+        transform: translateX(0)
+      }
+
+      to {
+        transform: translateX(-50%)
+      }
+    }
+
+    .layout {
+      display: flex;
+      flex: 1;
+      min-height: 0
+    }
+
+    aside {
+      width: 220px;
+      min-width: 220px;
+      background: var(--near-black);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 104px;
+      height: calc(100vh - 104px);
+      overflow: hidden
+    }
+
+    .sidebar-header {
+      padding: 20px 20px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05)
+    }
+
+    .sidebar-heading {
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.2)
+    }
+
+    .sidebar-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 0 24px
+    }
+
+    .sidebar-scroll::-webkit-scrollbar {
+      width: 3px
+    }
+
+    .sidebar-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px
+    }
+
+    .nav-all {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.5);
+      transition: all 0.2s;
+      border-left: 2px solid transparent
+    }
+
+    .nav-all:hover {
+      color: var(--white);
+      background: rgba(255, 255, 255, 0.04)
+    }
+
+    .nav-all.active {
+      color: var(--white);
+      border-left-color: var(--red);
+      background: rgba(26, 95, 168, 0.15)
+    }
+
+    .nav-count {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.2)
+    }
+
+    .nav-all.active .nav-count {
+      color: var(--red)
+    }
+
+    .nav-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.05);
+      margin: 6px 20px
+    }
+
+    .nav-group {
+      margin-bottom: 2px
+    }
+
+    .nav-parent {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 20px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+      transition: color 0.2s;
+      user-select: none
+    }
+
+    .nav-parent:hover {
+      color: rgba(255, 255, 255, 0.65)
+    }
+
+    .nav-parent.open {
+      color: rgba(255, 255, 255, 0.8)
+    }
+
+    .nav-arrow {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.2);
+      transition: transform 0.2s
+    }
+
+    .nav-parent.open .nav-arrow {
+      transform: rotate(90deg);
+      color: rgba(255, 255, 255, 0.4)
+    }
+
+    .nav-children {
+      display: none;
+      padding-bottom: 4px
+    }
+
+    .nav-group.open .nav-children {
+      display: block
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px 8px 30px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.4);
+      border-left: 2px solid transparent;
+      transition: all 0.15s
+    }
+
+    .nav-item:hover {
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.03)
+    }
+
+    .nav-item.active {
+      color: var(--gold);
+      border-left-color: var(--gold);
+      background: rgba(74, 159, 212, 0.1)
+    }
+
+    .nav-item-count {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.15)
+    }
+
+    .nav-item.active .nav-item-count {
+      color: rgba(74, 159, 212, 0.6)
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden
+    }
+
+    .main-top {
+      background: var(--white);
+      padding: 24px 36px 20px;
+      border-bottom: 1px solid var(--warm)
+    }
+
+    .breadcrumb {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 8px
+    }
+
+    .page-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--black)
+    }
+
+    .page-title strong {
+      font-weight: 600;
+      color: var(--red)
+    }
+
+    .page-count {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 300;
+      margin-top: 8px
+    }
+
+    .page-count strong {
+      color: var(--text);
+      font-weight: 500
+    }
+
+    .content-area {
+      flex: 1;
+      overflow: auto
+    }
+
+    .content-area::-webkit-scrollbar {
+      width: 6px;
+      height: 6px
+    }
+
+    .content-area::-webkit-scrollbar-thumb {
+      background: var(--warm);
+      border-radius: 3px
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10
+    }
+
+    thead tr {
+      background: var(--black)
+    }
+
+    th {
+      padding: 12px 16px;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.4);
+      text-align: left;
+      white-space: nowrap
+    }
+
+    th:first-child {
+      padding-left: 36px;
+      width: 72px
+    }
+
+    th:last-child {
+      padding-right: 36px
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      background: var(--white);
+      transition: background 0.1s
+    }
+
+    tbody tr:nth-child(even) {
+      background: #fdf9f4
+    }
+
+    tbody tr:hover {
+      background: #eef4ff
+    }
+
+    td {
+      padding: 10px 16px;
+      vertical-align: middle
+    }
+
+    td:first-child {
+      padding-left: 36px
+    }
+
+    td:last-child {
+      padding-right: 36px
+    }
+
+    .td-img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      border-radius: 4px;
+      background: var(--cream)
+    }
+
+    .td-no-img {
+      width: 56px;
+      height: 56px;
+      background: var(--cream);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: var(--warm)
+    }
+
+    .td-code {
+      font-size: 13px;
+      color: var(--subtle);
+      letter-spacing: 0.05em;
+      font-family: monospace;
+      white-space: nowrap
+    }
+
+    .td-nombre {
+      font-size: 15px;
+      font-weight: 300;
+      line-height: 1.5;
+      color: var(--text)
+    }
+
+    .td-cat {
+      font-size: 13px;
+      color: var(--muted);
+      max-width: 200px;
+      line-height: 1.4
+    }
+
+    .cat-parent-txt {
+      color: var(--subtle);
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      display: block
+    }
+
+    .cat-child-txt {
+      color: var(--text);
+      font-size: 13.5px;
+      display: block
+    }
+
+    .grid-view {
+      display: none;
+      padding: 20px 28px;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px
+    }
+
+    .grid-view.show {
+      display: grid
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      transition: all 0.2s
+    }
+
+    .card:hover {
+      border-color: var(--red);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(26, 95, 168, 0.12)
+    }
+
+    .card-img-wrap {
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--cream);
+      border-bottom: 1px solid var(--border);
+      padding: 12px
+    }
+
+    .card-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain
+    }
+
+    .card-no-img {
+      font-size: 40px;
+      color: var(--warm)
+    }
+
+    .card-body {
+      padding: 12px
+    }
+
+    .card-code {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--subtle);
+      margin-bottom: 5px
+    }
+
+    .card-nombre {
+      font-size: 13.5px;
+      font-weight: 300;
+      line-height: 1.45;
+      color: var(--text);
+      margin-bottom: 7px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden
+    }
+
+    .card-cat {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .no-results {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 40px;
+      text-align: center;
+      background: var(--white)
+    }
+
+    .no-results-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 80px;
+      color: var(--warm);
+      line-height: 1
+    }
+
+    .no-results-text {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 300;
+      margin-top: 8px
+    }
+
+    footer {
+      background: var(--black);
+      padding: 14px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0
+    }
+
+    .footer-brand {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.2);
+      letter-spacing: 0.1em
+    }
+
+    .footer-note {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.15);
+      font-weight: 300
+    }
+
+    @media(max-width:900px) {
+      aside {
+        display: none
+      }
+
+      .header-stats {
+        display: none
+      }
+
+      .header-brand {
+        min-width: auto
+      }
+
+      .main-top {
+        padding: 16px
+      }
+
+      .grid-view {
+        padding: 14px;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr))
+      }
+    }
+  </style>
+  <!-- 图片放大弹窗 -->
+  <div id="imageModal">
+    <span id="modalClose">&times;</span>
+    <img id="modalImage" src="" alt="">
+    <div id="modalInfo"></div>
+  </div>
+</head>
+
+<body>
+
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="logo">IBERO<em>CHINA</em></div>
+    <div class="bar-wrap">
+      <div class="bar"></div>
+    </div>
+    <div class="msg">Cargando catálogo...</div>
+  </div>
+
+  <!-- ERROR -->
+  <div id="error">
+    <h2>Error al cargar</h2>
+    <p>No se encontró el archivo <strong>productos.csv</strong>.<br>Asegúrate de que el archivo está en la misma carpeta
+      que este HTML.</p>
+    <code>productos.csv</code>
+  </div>
+
+  <!-- APP -->
+  <div id="app">
+    <div class="sticky-top" id="stickyTop">
+      <header>
+        <div class="header-brand">
+          <div class="logo-icon">IC</div>
+          <div>
+            <div class="logo-text">IBEROCHINA</div>
+            <div class="logo-sub">Productos Congelados</div>
+          </div>
+        </div>
+        <div class="header-center">
+          <div class="search-container">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input type="text" id="search" placeholder="Buscar por nombre o referencia..." oninput="filterProducts()">
+          </div>
+          <div class="view-btns">
+            <button class="view-btn active" onclick="setView('table',this)" title="Tabla">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="1" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+                <line x1="3" y1="15" x2="21" y2="15" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+              </svg>
+            </button>
+            <button class="view-btn" onclick="setView('grid',this)" title="Cuadrícula">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="header-stats">
+          <div class="stat">
+            <div class="stat-num" id="statNum">—</div>
+            <div class="stat-label">Productos</div>
+          </div>
+        </div>
+      </header>
+
+      <div class="ticker">
+        <div class="ticker-track" id="tickerTrack"></div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <aside id="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-heading">Categorías</div>
+        </div>
+        <div class="sidebar-scroll" id="sidebarNav"></div>
+      </aside>
+      <main>
+        <div class="main-top">
+          <div class="breadcrumb" id="breadcrumb">Todos los productos</div>
+          <div class="page-title" id="pageTitle">Productos <strong>Congelados</strong></div>
+          <div class="page-count"><strong id="countNum">—</strong> referencias</div>
+        </div>
+        <div class="content-area">
+          <table id="tableView">
+            <thead id="tableHead">
+              <tr>
+                <th>Foto</th>
+                <th>Referencia</th>
+                <th>Nombre del Producto</th>
+                <th>Categoría</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+          <div class="grid-view" id="gridView"></div>
+          <div class="no-results" id="noResults">
+            <div class="no-results-num">0</div>
+            <div class="no-results-text">Sin resultados para esta búsqueda</div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <footer>
+      <div class="footer-brand">IBEROCHINA · 中欧商场</div>
+      <div class="footer-note" id="footerNote">Expertos en Alimentación Oriental · Desde 1987</div>
+    </footer>
+  </div>
+
+  <script>
+    let allProducts = [];
+    let curFilter = '';
+    let curView = 'table';
+
+    // ── CARGAR CSV ──────────────────────────────────────────────
+    function loadCSV() {
+      const csvUrl = window.location.href.replace(/\/[^\/]*$/, '/') + 'productos.csv';
+      console.log('Cargando CSV desde:', csvUrl);
+      Papa.parse(csvUrl, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function (results) {
+          const fields = results.meta.fields || [];
+          console.log('Campos encontrados:', fields);
+          const findField = (keys) => fields.find(f => keys.some(k => f.toLowerCase().includes(k.toLowerCase()))) || '';
+          const fNombre = findField(['nombre']);
+          const fRef = findField(['referencia']);
+          const fImg = findField(['imagen', '256']);
+          const fCat = findField(['categor']);
+          console.log('Campos usados:', fNombre, fRef, fImg, fCat);
+          allProducts = results.data.map(row => ({
+            nombre: (row[fNombre] || '').trim(),
+            ref: (row[fRef] || '').trim(),
+            img: (row[fImg] || '').trim(),
+            categoria: (row[fCat] || '').trim()
+          })).filter(p => p.nombre);
+
+          document.getElementById('statNum').textContent = allProducts.length;
+          document.getElementById('countNum').textContent = allProducts.length;
+          document.getElementById('footerNote').textContent =
+            'Expertos en Alimentación Oriental · ' + allProducts.length + ' referencias';
+
+          buildSidebar();
+          renderProducts(allProducts);
+          setupImageModal();
+          initHeaderScroll();
+
+          document.getElementById('loading').style.display = 'none';
+          const app = document.getElementById('app');
+          app.style.display = 'flex';
+        },
+        error: function () {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').style.display = 'flex';  // 原先是 const err = ...
+        }
+      });
+    }
+
+    // ==================== 图片点击放大功能 ====================
+    function setupImageModal() {
+      const modal = document.getElementById('imageModal');
+      const modalImg = document.getElementById('modalImage');
+      const modalInfo = document.getElementById('modalInfo');
+      const closeBtn = document.getElementById('modalClose');
+      let scale = 1;
+      updateZoom();
+
+
+      function updateZoom() {
+        modalImg.style.transform = `scale(${scale})`;
+        if (scale > 1) {
+          modal.classList.add('zoom-out');
+          modal.classList.remove('zoom-in');
+        } else {
+          modal.classList.add('zoom-in');
+          modal.classList.remove('zoom-out');
+        }
+      }
+
+
+      modalImg.addEventListener('mouseenter', () => { modal.classList.remove('zoom-out'); modal.classList.add('zoom-in'); });
+modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'); modal.classList.add('zoom-out'); });
+
+
+      modalImg.addEventListener('click', function (e) {
+        e.stopPropagation(); // 防止冒泡到 modal
+
+        if (scale === 1) {
+          scale = 2; // 放大
+        } else {
+          scale = 1; // 缩小
+        }
+        updateZoom();
+      });
+
+
+      // 点击关闭
+      function closeModal() {
+        modal.classList.remove('show');
+        scale = 1;
+        updateZoom();
+        setTimeout(() => {
+          modalImg.src = '';
+        }, 300);
+      }
+
+      closeBtn.addEventListener('click', closeModal);
+      modal.addEventListener('click', e => {
+        if (e.target === modal) {
+          if (scale > 1) { scale = 1; updateZoom(); }
+          else { closeModal(); }
+        }
+      });
+
+      // ESC 键关闭
+      document.addEventListener('keydown', function (e) {
+        if (e.key === "Escape" && modal.classList.contains('show')) {
+          closeModal();
+        }
+      });
+
+      // 给所有图片添加点击事件（使用事件委托，更高效）
+      document.addEventListener('click', function (e) {
+        const img = e.target.closest('img.td-img, img.card-img');
+        if (!img || !img.src) return;
+
+        // 获取产品信息（尝试从同一行或卡片中找）
+        let productName = '';
+        let ref = '';
+
+        const row = img.closest('tr');
+        if (row) {
+          const nameTd = row.querySelector('.td-nombre');
+          const refTd = row.querySelector('.td-code');
+          if (nameTd) productName = nameTd.textContent.trim();
+          if (refTd) ref = refTd.textContent.trim();
+        } else {
+          const card = img.closest('.card');
+          if (card) {
+            productName = card.querySelector('.card-nombre')?.textContent.trim() || '';
+            ref = card.querySelector('.card-code')?.textContent.trim() || '';
+          }
+        }
+
+        modalImg.src = img.src;
+        modalInfo.textContent = ref ? `${ref} — ${productName}` : productName;
+        modal.classList.add('show');
+      });
+    }
+
+    // ── SIDEBAR ─────────────────────────────────────────────────
+    function buildSidebar() {
+      const tree = {};
+      allProducts.forEach(p => {
+        if (!p.categoria) return;
+        const parts = p.categoria.split('/').map(s => s.trim());
+        const parent = parts[0];
+        const child = parts[1] || '';
+        if (!tree[parent]) tree[parent] = {};
+        if (child) tree[parent][child] = (tree[parent][child] || 0) + 1;
+        else tree[parent]['_total'] = (tree[parent]['_total'] || 0) + 1;
+      });
+
+      const total = allProducts.length;
+      let html = `<div class="nav-all active" onclick="selectAll(this)">
     <span>Todos los productos</span><span class="nav-count">${total}</span>
   </div><div class="nav-divider"></div>`;
 
-  Object.keys(tree).sort().forEach(parent => {
-    const children = Object.keys(tree[parent]).filter(k => k !== '_total').sort();
-    const parentCount = allProducts.filter(p => p.categoria.startsWith(parent)).length;
-    const groupId = 'g-' + parent.replace(/[^a-zA-Z0-9]/g, '_');
-    const ep = parent.replace(/'/g, "\\'");
+      Object.keys(tree).sort().forEach(parent => {
+        const children = Object.keys(tree[parent]).filter(k => k !== '_total').sort();
+        const parentCount = allProducts.filter(p => p.categoria.startsWith(parent)).length;
+        const groupId = 'g-' + parent.replace(/[^a-zA-Z0-9]/g, '_');
+        const ep = parent.replace(/'/g, "\\'");
 
-    html += `<div class="nav-group" id="${groupId}">
+        html += `<div class="nav-group" id="${groupId}">
       <div class="nav-parent" onclick="toggleGroup('${groupId}','${ep}',this)">
         <span>${parent}</span>
         <span style="display:flex;align-items:center;gap:8px">
@@ -552,202 +1234,229 @@ function buildSidebar() {
           <span style="font-style:italic;opacity:0.7">— Todos</span>
           <span class="nav-item-count">${parentCount}</span>
         </div>`;
-    children.forEach(child => {
-      const cnt = tree[parent][child];
-      const ec = child.replace(/'/g, "\\'");
-      html += `<div class="nav-item" onclick="selectCat('${ep}','${ec}',this)">
+        children.forEach(child => {
+          const cnt = tree[parent][child];
+          const ec = child.replace(/'/g, "\\'");
+          html += `<div class="nav-item" onclick="selectCat('${ep}','${ec}',this)">
         <span>${child}</span><span class="nav-item-count">${cnt}</span>
       </div>`;
-    });
-    html += `</div></div>`;
-  });
+        });
+        html += `</div></div>`;
+      });
 
-  document.getElementById('sidebarNav').innerHTML = html;
-}
+      document.getElementById('sidebarNav').innerHTML = html;
+    }
 
-// ── NAV ACTIONS ──────────────────────────────────────────────
-function clearActive() {
-  document.querySelectorAll('.nav-all,.nav-item').forEach(e => e.classList.remove('active'));
-  document.querySelectorAll('.nav-parent').forEach(e => e.classList.remove('open'));
-  document.querySelectorAll('.nav-group').forEach(e => e.classList.remove('open'));
-}
+    // ── NAV ACTIONS ──────────────────────────────────────────────
+    function clearActive() {
+      document.querySelectorAll('.nav-all,.nav-item').forEach(e => e.classList.remove('active'));
+      document.querySelectorAll('.nav-parent').forEach(e => e.classList.remove('open'));
+      document.querySelectorAll('.nav-group').forEach(e => e.classList.remove('open'));
+    }
 
-function selectAll(el) {
-  clearActive(); el.classList.add('active');
-  curFilter = '';
-  document.getElementById('breadcrumb').textContent = 'Todos los productos';
-  document.getElementById('pageTitle').innerHTML = 'Productos <strong>Congelados</strong>';
-  filterProducts();
-}
+    function selectAll(el) {
+      clearActive(); el.classList.add('active');
+      curFilter = '';
+      document.getElementById('breadcrumb').textContent = 'Todos los productos';
+      document.getElementById('pageTitle').innerHTML = 'Productos <strong>Congelados</strong>';
+      filterProducts();
+    }
 
-function toggleGroup(id, parent, el) {
-  const grp = document.getElementById(id);
-  const wasOpen = grp.classList.contains('open');
-  clearActive();
-  if (!wasOpen) {
-    grp.classList.add('open');
-    el.classList.add('open');
-    curFilter = 'parent:' + parent;
-    document.getElementById('breadcrumb').textContent = parent;
-    const words = parent.split(' ');
-    document.getElementById('pageTitle').innerHTML =
-      words.slice(0,-1).join(' ') + ' <strong>' + words[words.length-1] + '</strong>';
-  } else {
-    curFilter = '';
-    document.querySelector('.nav-all').classList.add('active');
-    document.getElementById('breadcrumb').textContent = 'Todos los productos';
-    document.getElementById('pageTitle').innerHTML = 'Productos <strong>Congelados</strong>';
-  }
-  filterProducts();
-}
+    function toggleGroup(id, parent, el) {
+      const grp = document.getElementById(id);
+      const wasOpen = grp.classList.contains('open');
+      clearActive();
+      if (!wasOpen) {
+        grp.classList.add('open');
+        el.classList.add('open');
+        curFilter = 'parent:' + parent;
+        document.getElementById('breadcrumb').textContent = parent;
+        const words = parent.split(' ');
+        document.getElementById('pageTitle').innerHTML =
+          words.slice(0, -1).join(' ') + ' <strong>' + words[words.length - 1] + '</strong>';
+      } else {
+        curFilter = '';
+        document.querySelector('.nav-all').classList.add('active');
+        document.getElementById('breadcrumb').textContent = 'Todos los productos';
+        document.getElementById('pageTitle').innerHTML = 'Productos <strong>Congelados</strong>';
+      }
+      filterProducts();
+    }
 
-function selectCat(parent, child, el) {
-  clearActive(); el.classList.add('active');
-  const grp = el.closest('.nav-group');
-  if (grp) { grp.classList.add('open'); grp.querySelector('.nav-parent').classList.add('open'); }
-  curFilter = child ? 'child:' + child : 'parent:' + parent;
-  document.getElementById('breadcrumb').textContent = child ? parent + ' › ' + child : parent;
-  const label = child || parent;
-  const words = label.split(' ');
-  document.getElementById('pageTitle').innerHTML =
-    words.slice(0,-1).join(' ') + ' <strong>' + words[words.length-1] + '</strong>';
-  filterProducts();
-}
+    function selectCat(parent, child, el) {
+      clearActive(); el.classList.add('active');
+      const grp = el.closest('.nav-group');
+      if (grp) { grp.classList.add('open'); grp.querySelector('.nav-parent').classList.add('open'); }
+      curFilter = child ? 'child:' + child : 'parent:' + parent;
+      document.getElementById('breadcrumb').textContent = child ? parent + ' › ' + child : parent;
+      const label = child || parent;
+      const words = label.split(' ');
+      document.getElementById('pageTitle').innerHTML =
+        words.slice(0, -1).join(' ') + ' <strong>' + words[words.length - 1] + '</strong>';
+      filterProducts();
+    }
 
-function setView(v, btn) {
-  curView = v;
-  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  filterProducts();
-}
+    function setView(v, btn) {
+      curView = v;
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filterProducts();
+    }
 
-// ── FILTER + RENDER ──────────────────────────────────────────
-function filterProducts() {
-  const q = document.getElementById('search').value.toLowerCase().trim();
-  let data = allProducts;
+    // ── FILTER + RENDER ──────────────────────────────────────────
+    function filterProducts() {
+      const q = document.getElementById('search').value.toLowerCase().trim();
+      let data = allProducts;
 
-  if (curFilter.startsWith('child:')) {
-    const child = curFilter.slice(6);
-    data = data.filter(p => p.categoria.includes(child));
-  } else if (curFilter.startsWith('parent:')) {
-    const parent = curFilter.slice(7);
-    data = data.filter(p => p.categoria.startsWith(parent));
-  }
+      if (curFilter.startsWith('child:')) {
+        const child = curFilter.slice(6);
+        data = data.filter(p => p.categoria.includes(child));
+      } else if (curFilter.startsWith('parent:')) {
+        const parent = curFilter.slice(7);
+        data = data.filter(p => p.categoria.startsWith(parent));
+      }
 
-  if (q) data = data.filter(p =>
-    p.nombre.toLowerCase().includes(q) || p.ref.toLowerCase().includes(q)
-  );
+      if (q) data = data.filter(p =>
+        p.nombre.toLowerCase().includes(q) || p.ref.toLowerCase().includes(q)
+      );
 
-  document.getElementById('countNum').textContent = data.length;
-  document.getElementById('statNum').textContent = data.length;
-  renderProducts(data);
-}
+      document.getElementById('countNum').textContent = data.length;
+      document.getElementById('statNum').textContent = data.length;
+      renderProducts(data);
+    }
 
-function imgTag(img, cls) {
-  if (img && img.length > 50)
-    return `<img src="data:image/jpeg;base64,${img}" class="${cls}" loading="lazy">`;
-  return `<div class="${cls.replace('td-img','td-no-img').replace('card-img','card-no-img')}">&#10052;</div>`;
-}
+    function imgTag(img, cls) {
+      if (img && img.length > 50)
+        return `<img src="data:image/jpeg;base64,${img}" class="${cls}" loading="lazy">`;
+      return `<div class="${cls.replace('td-img', 'td-no-img').replace('card-img', 'card-no-img')}">&#10052;</div>`;
+    }
 
-function catHtml(cat) {
-  const parts = cat.split('/').map(s => s.trim());
-  if (parts.length > 1)
-    return `<span class="cat-parent-txt">${parts[0]}</span><span class="cat-child-txt">${parts[parts.length-1]}</span>`;
-  return `<span class="cat-child-txt">${parts[0] || '—'}</span>`;
-}
+    function catHtml(cat) {
+      const parts = cat.split('/').map(s => s.trim());
+      if (parts.length > 1)
+        return `<span class="cat-parent-txt">${parts[0]}</span><span class="cat-child-txt">${parts[parts.length - 1]}</span>`;
+      return `<span class="cat-child-txt">${parts[0] || '—'}</span>`;
+    }
 
-function renderProducts(data) {
-  const noRes = document.getElementById('noResults');
-  const tableV = document.getElementById('tableView');
-  const gridV  = document.getElementById('gridView');
+    function renderProducts(data) {
+      const noRes = document.getElementById('noResults');
+      const tableV = document.getElementById('tableView');
+      const gridV = document.getElementById('gridView');
 
-  if (!data.length) {
-    tableV.style.display = 'none'; gridV.classList.remove('show'); noRes.style.display = 'flex'; return;
-  }
-  noRes.style.display = 'none';
+      if (!data.length) {
+        tableV.style.display = 'none'; gridV.classList.remove('show'); noRes.style.display = 'flex'; return;
+      }
+      noRes.style.display = 'none';
 
-  if (curView === 'grid') {
-    tableV.style.display = 'none';
-    gridV.classList.add('show');
-    gridV.innerHTML = data.map(p => `
+      if (curView === 'grid') {
+        tableV.style.display = 'none';
+        gridV.classList.add('show');
+        gridV.innerHTML = data.map(p => `
       <div class="card">
-        <div class="card-img-wrap">${imgTag(p.img,'card-img')}</div>
+        <div class="card-img-wrap">${imgTag(p.img, 'card-img')}</div>
         <div class="card-body">
           <div class="card-code">${p.ref}</div>
           <div class="card-nombre">${p.nombre}</div>
           <div class="card-cat">${p.categoria.split('/').pop().trim()}</div>
         </div>
       </div>`).join('');
-  } else {
-    gridV.classList.remove('show');
-    tableV.style.display = '';
-    document.getElementById('tableBody').innerHTML = data.map(p => `
+      } else {
+        gridV.classList.remove('show');
+        tableV.style.display = '';
+        document.getElementById('tableBody').innerHTML = data.map(p => `
       <tr>
-        <td>${imgTag(p.img,'td-img')}</td>
+        <td>${imgTag(p.img, 'td-img')}</td>
         <td class="td-code">${p.ref}</td>
         <td class="td-nombre">${p.nombre}</td>
         <td class="td-cat">${catHtml(p.categoria)}</td>
       </tr>`).join('');
-  }
-}
-
-// ==================== 自动生成 Ticker（无限循环版） ====================
-function initTicker() {
-  const brands = [
-    "CONGELADOS", "AJINOMOTO", "CHIMEI", "MOCHI QUEEN", 
-    "SPRING HOME", "SK", "MENGFU", "COCK", "MARINHAVE", 
-    "LITTLE CHEF", "EXOSTAR", "YAMASUKI"
-  ];
-
-  const track = document.getElementById('tickerTrack');
-  if (!track) return;
-
-  let html = '';
-  const repeatTimes = 8;   // ← 这里改数字！想更密集就改大（推荐 6~10）
-
-  for (let i = 0; i < repeatTimes; i++) {
-    brands.forEach(brand => {
-      html += `<div class="ticker-item">${brand}</div>`;
-    });
-  }
-
-  track.innerHTML = html;
-}
-
-// 在页面加载完成后调用
-window.addEventListener('load', initTicker);
-
-// ==================== 只隐藏 Header，Ticker 和 Sidebar 紧贴 Ticker ====================
-function initHeaderScroll() {
-  const stickyTop = document.querySelector('.sticky-top');
-  if (!stickyTop) return;
-
-  let lastScrollY = window.scrollY;
-  let ticking = false;
-
-  function updateHeader() {
-    const currentScrollY = window.scrollY;
-
-    if (currentScrollY > lastScrollY && currentScrollY > 60) {
-      stickyTop.classList.add('header-hidden');
-    } else {
-      stickyTop.classList.remove('header-hidden');
+      }
     }
 
-    lastScrollY = currentScrollY;
-    ticking = false;
-  }
+    // ==================== 自动生成 Ticker（无限循环版） ====================
+    function initTicker() {
+      const brands = [
+        "CONGELADOS", "AJINOMOTO", "CHIMEI", "MOCHI QUEEN",
+        "SPRING HOME", "SK", "MENGFU", "COCK", "MARINHAVE",
+        "LITTLE CHEF", "EXOSTAR", "YAMASUKI"
+      ];
 
-  window.addEventListener('scroll', () => {
-    if (!ticking) {
-      requestAnimationFrame(updateHeader);
-      ticking = true;
+      const track = document.getElementById('tickerTrack');
+      if (!track) return;
+
+      let html = '';
+      const repeatTimes = 8;   // ← 这里改数字！想更密集就改大（推荐 6~10）
+
+      for (let i = 0; i < repeatTimes; i++) {
+        brands.forEach(brand => {
+          html += `<div class="ticker-item">${brand}</div>`;
+        });
+      }
+
+      track.innerHTML = html;
     }
-  });
-}
 
-// ── INIT ─────────────────────────────────────────────────────
-loadCSV();
-</script>
+    window.addEventListener('load', initTicker);
+
+    // ==================== 只隐藏 Header，Ticker 和 Sidebar 紧贴 Ticker ====================
+    function initHeaderScroll() {
+      const stickyTop = document.getElementById('stickyTop');
+      const sidebar = document.getElementById('sidebar');
+      const tableHead = document.getElementById('tableHead');
+
+      const HEADER_H = 70;
+      const TICKER_H = 34;
+
+      let lastScrollY = window.scrollY;
+      let headerHidden = false;
+      let ticking = false;
+
+      function updatePositions(hidden) {
+        if (hidden) {
+          stickyTop.classList.add('header-hidden');
+          sidebar.style.top = TICKER_H + 'px';
+          sidebar.style.height = 'calc(100vh - ' + TICKER_H + 'px)';
+          tableHead.style.top = '0px';
+        } else {
+          stickyTop.classList.remove('header-hidden');
+          sidebar.style.top = (HEADER_H + TICKER_H) + 'px';
+          sidebar.style.height = 'calc(100vh - ' + (HEADER_H + TICKER_H) + 'px)';
+          tableHead.style.top = '0px';
+        }
+      }
+
+      updatePositions(false);
+
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          requestAnimationFrame(() => {
+            const currentScrollY = window.scrollY;
+            const shouldHide = currentScrollY > lastScrollY && currentScrollY > 60;
+            if (shouldHide !== headerHidden) {
+              headerHidden = shouldHide;
+              updatePositions(headerHidden);
+            }
+            lastScrollY = currentScrollY;
+            ticking = false;
+          });
+          ticking = true;
+        }
+      });
+    }
+
+    function initTicker() {
+      const brands = ["CONGELADOS", "AJINOMOTO", "CHIMEI", "MOCHI QUEEN", "SPRING HOME", "SK", "MENGFU", "COCK", "MARINHAVE", "LITTLE CHEF", "EXOSTAR", "YAMASUKI"];
+      const track = document.getElementById('tickerTrack');
+      if (!track) return;
+      let html = '';
+      for (let i = 0; i < 8; i++) brands.forEach(b => { html += `<div class="ticker-item">${b}</div>`; });
+      track.innerHTML = html;
+    }
+    window.addEventListener('load', initTicker);
+
+    // ── INIT ─────────────────────────────────────────────────────
+    loadCSV();
+  </script>
 </body>
+
 </html>

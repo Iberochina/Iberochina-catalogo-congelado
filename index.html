@@ -138,7 +138,7 @@
       max-height: 92vh;
       border-radius: 6px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-      transition: transform 0.3s ease;
+      transition: transform 0.3s ease;/*animacion en cuando hacerlo en grande*/
     }
 
     #modalClose {
@@ -1117,13 +1117,18 @@
 
       function updateZoom() {
         modalImg.style.transform = `scale(${scale})`;
-        modal.classList.toggle('zoom-in', scale > 1);
-        modal.classList.toggle('zoom-out', scale <= 1);
+        if (scale > 1) {
+          modal.classList.add('zoom-out');
+          modal.classList.remove('zoom-in');
+        } else {
+          modal.classList.add('zoom-in');
+          modal.classList.remove('zoom-out');
+        }
       }
 
 
       modalImg.addEventListener('mouseenter', () => { modal.classList.remove('zoom-out'); modal.classList.add('zoom-in'); });
-      modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'); modal.classList.add('zoom-out'); });
+modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'); modal.classList.add('zoom-out'); });
 
 
       modalImg.addEventListener('click', function (e) {
@@ -1141,6 +1146,8 @@
       // 点击关闭
       function closeModal() {
         modal.classList.remove('show');
+        scale = 1;
+        updateZoom();
         setTimeout(() => {
           modalImg.src = '';
         }, 300);

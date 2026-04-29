@@ -111,12 +111,14 @@
 
     /* ============== Cambio de tamaño de la imagen ============== */
     #imageModal {
-      display: none; 
-      position: fixed;/*posicion fijo*/ 
+      display: none;
+      position: fixed;
+      /*posicion fijo*/
       inset: 0;
       background: rgba(0, 0, 0, 0.92);
       z-index: 1000;
-      align-items: center;/*para central*/
+      align-items: center;
+      /*para central*/
       justify-content: center;
 
     }
@@ -129,8 +131,9 @@
       cursor: zoom-out;
     }
 
-    #imageModal.show {  
-      display: flex;/*hacer visible*/
+    #imageModal.show {
+      display: flex;
+      /*hacer visible*/
     }
 
     #modalImage {
@@ -138,7 +141,8 @@
       max-height: 92vh;
       border-radius: 6px;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-      transition: transform 0.3s ease;/*animacion en cuando hacerlo en grande*/
+      transition: transform 0.3s ease;
+      /*animacion en cuando hacerlo en grande*/
     }
 
     #modalClose {
@@ -914,6 +918,47 @@
       font-weight: 300
     }
 
+    /* 分页样式 */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      padding: 20px 36px;
+      background: var(--white);
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+      /* 响应式换行 */
+    }
+
+    .page-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .page-btn:hover:not(:disabled) {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .page-btn.active {
+      background: var(--blue);
+      /* 当前页按钮背景红色 */
+      border-color: var(--blue);
+      color: white;
+    }
+
+    .page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
     @media(max-width:900px) {
       aside {
         display: none
@@ -1059,6 +1104,8 @@
     let allProducts = [];
     let curFilter = '';
     let curView = 'table';
+    let currentPage = 1;
+    let rowsPerPage = 50;
 
     // ── CARGAR CSV ──────────────────────────────────────────────
     function loadCSV() {
@@ -1128,7 +1175,7 @@
 
 
       modalImg.addEventListener('mouseenter', () => { modal.classList.remove('zoom-out'); modal.classList.add('zoom-in'); });
-modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'); modal.classList.add('zoom-out'); });
+      modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'); modal.classList.add('zoom-out'); });
 
 
       modalImg.addEventListener('click', function (e) {
@@ -1297,6 +1344,7 @@ modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'
     }
 
     function setView(v, btn) {
+      currentPage = 1;  // ← 添加这行
       curView = v;
       document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
@@ -1305,6 +1353,8 @@ modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'
 
     // ── FILTER + RENDER ──────────────────────────────────────────
     function filterProducts() {
+      currentPage = 1;  // ← 添加这行！重置为第一页
+
       const q = document.getElementById('search').value.toLowerCase().trim();
       let data = allProducts;
 
@@ -1338,20 +1388,84 @@ modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'
       return `<span class="cat-child-txt">${parts[0] || '—'}</span>`;
     }
 
+    // ==================== funciones peincipales ====================
+    function renderPagination(totalItems, totalPages) {
+      const oldPagination = document.querySelector('.pagination');
+      if (oldPagination) oldPagination.remove();
+      if (totalPages <= 1) return;
+
+      const paginationDiv = document.createElement('div');
+      paginationDiv.className = 'pagination';
+
+      let startPage = Math.max(1, currentPage - 2);
+      let endPage = Math.min(totalPages, currentPage + 2);
+      let pagesHtml = '';
+
+      pagesHtml += `<button class="page-btn prev-btn" ${currentPage === 1 ? 'disabled' : ''}>‹ Anterior</button>`;
+
+      if (startPage > 1) {
+        pagesHtml += `<button class="page-btn page-num" data-page="1">1</button>`;
+        if (startPage > 2) pagesHtml += `<span class="page-dots">...</span>`;
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        pagesHtml += `<button class="page-btn page-num ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+      }
+
+      if (endPage < totalPages) {
+        if (endPage < totalPages - 1) pagesHtml += `<span class="page-dots">...</span>`;
+        pagesHtml += `<button class="page-btn page-num" data-page="${totalPages}">${totalPages}</button>`;
+      }
+
+      pagesHtml += `<button class="page-btn next-btn" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente ›</button>`;
+
+      const startItem = (currentPage - 1) * rowsPerPage + 1;
+      const endItem = Math.min(currentPage * rowsPerPage, totalItems);
+      pagesHtml += `<span class="page-info">${startItem} - ${endItem} de ${totalItems}</span>`;
+
+      paginationDiv.innerHTML = pagesHtml;
+
+      paginationDiv.addEventListener('click', (e) => {
+        const btn = e.target.closest('.page-btn');
+        if (!btn || btn.disabled) return;
+        let newPage = null;
+        if (btn.classList.contains('prev-btn')) newPage = currentPage - 1;
+        else if (btn.classList.contains('next-btn')) newPage = currentPage + 1;
+        else if (btn.classList.contains('page-num')) newPage = parseInt(btn.getAttribute('data-page'));
+        if (newPage && newPage >= 1 && newPage <= totalPages && newPage !== currentPage) {
+          currentPage = newPage;
+          filterProducts();
+          document.querySelector('.content-area')?.scrollTo(0, 0);
+        }
+      });
+
+      document.querySelector('.content-area').appendChild(paginationDiv);
+    }
+
     function renderProducts(data) {
       const noRes = document.getElementById('noResults');
       const tableV = document.getElementById('tableView');
       const gridV = document.getElementById('gridView');
 
       if (!data.length) {
-        tableV.style.display = 'none'; gridV.classList.remove('show'); noRes.style.display = 'flex'; return;
+        tableV.style.display = 'none';
+        gridV.classList.remove('show');
+        noRes.style.display = 'flex';
+        const existingPagination = document.querySelector('.pagination');
+        if (existingPagination) existingPagination.style.display = 'none';
+        return;
       }
       noRes.style.display = 'none';
+
+      // ✅ 分页逻辑
+      const totalPages = Math.ceil(data.length / rowsPerPage);
+      const start = (currentPage - 1) * rowsPerPage;
+      const pageData = data.slice(start, start + rowsPerPage);
 
       if (curView === 'grid') {
         tableV.style.display = 'none';
         gridV.classList.add('show');
-        gridV.innerHTML = data.map(p => `
+        gridV.innerHTML = pageData.map(p => `
       <div class="card">
         <div class="card-img-wrap">${imgTag(p.img, 'card-img')}</div>
         <div class="card-body">
@@ -1363,7 +1477,7 @@ modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'
       } else {
         gridV.classList.remove('show');
         tableV.style.display = '';
-        document.getElementById('tableBody').innerHTML = data.map(p => `
+        document.getElementById('tableBody').innerHTML = pageData.map(p => `
       <tr>
         <td>${imgTag(p.img, 'td-img')}</td>
         <td class="td-code">${p.ref}</td>
@@ -1371,6 +1485,9 @@ modalImg.addEventListener('mouseleave', () => { modal.classList.remove('zoom-in'
         <td class="td-cat">${catHtml(p.categoria)}</td>
       </tr>`).join('');
       }
+
+      // ✅ 调用分页渲染
+      renderPagination(data.length, totalPages);
     }
 
     // ==================== 自动生成 Ticker（无限循环版） ====================
